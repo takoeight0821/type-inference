@@ -23,8 +23,10 @@ symbol :: String -> Parser String
 symbol = L.symbol sc
 
 reserved :: Parser ()
-reserved = void $ choice $ map (try . f) ["let", "in", "fun"]
-  where f keyword = lexeme (string keyword <* notFollowedBy alphaNumChar)
+reserved = void $ choice $ map (try . keyword) ["let", "in", "fun", "true", "false"]
+
+keyword :: String -> Parser ()
+keyword x = void $ lexeme (string x <* notFollowedBy alphaNumChar)
 
 operator :: String -> Parser ()
 operator op = void $ lexeme (string op <* notFollowedBy opLetter)
@@ -38,8 +40,17 @@ lowerIdent = label "lower ident" $ lexeme $ do
 pVar :: Parser Exp
 pVar = Var <$> lowerIdent <?> "variable"
 
+integer :: Parser Integer
+integer = lexeme L.decimal
+
+pIntC :: Parser Exp
+pIntC = Const . IntC <$> integer
+
+pBoolC :: Parser Exp
+pBoolC = Const . BoolC <$> ((keyword "true" >> pure True) <|> (keyword "false" >> pure False))
+
 pSingleExp :: Parser Exp
-pSingleExp = pVar <|> between (symbol "(") (symbol ")") pExp
+pSingleExp = pVar <|> pIntC <|> pBoolC <|> between (symbol "(") (symbol ")") pExp
 
 pApp :: Parser Exp
 pApp = foldl App <$> pSingleExp <*> some pSingleExp
