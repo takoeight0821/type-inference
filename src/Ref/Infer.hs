@@ -1,15 +1,15 @@
-{-# LANGUAGE TupleSections #-}
 module Ref.Infer where
 
 import           Control.Monad.IO.Class
 import           Control.Monad.State
 import           Data.IORef
+import           Data.List
 import           Data.Map               (Map)
 import qualified Data.Map               as Map
 import           Ref.Type
 import           Syntax
 
-type Env = Map String Type
+type Env = Map String Scheme
 
 type InferM a = StateT Env IO a
 
@@ -23,7 +23,7 @@ infer (Var x)       = do
   mt <- gets (Map.lookup x)
   case mt of
     Nothing -> error "undefined variable"
-    Just t  -> return t
+    Just t  -> instantiate t
 infer (Const IntC{}) = return (TyApp IntCon [])
 infer (Const BoolC{}) = return (TyApp BoolCon [])
 infer (App e1 e2)   = do
@@ -36,7 +36,7 @@ infer (Lam x e)     = do
   xTy <- newTyMeta
 
   env <- get
-  modify (Map.insert x xTy)
+  modify (Map.insert x (Forall [] xTy))
   eTy <- infer e
   put env
 
@@ -46,7 +46,8 @@ infer (Let x e1 e2) = do
   t1 <- infer e1
   put env
 
-  modify (Map.insert x t1)
+  scheme <- generalize env t1
+  modify (Map.insert x scheme)
   infer e2
 
 newTyMeta :: MonadIO m => m Type
@@ -87,5 +88,36 @@ derefType (TyMeta r) = do
     Just t  -> derefType t
 derefType (TyApp c ts) = TyApp c <$> mapM derefType ts
 
+derefScheme :: MonadIO f => Scheme -> f Scheme
+derefScheme (Forall as t) = Forall as <$> derefType t
+
 deref :: MonadIO m => Env -> m Env
-deref = mapM derefType
+deref = mapM derefScheme
+
+generalize :: MonadIO m => Env -> Type -> m Scheme
+generalize env t = do
+  fvs <- freevars env t
+  Forall fvs <$> derefType t
+
+instantiate :: MonadIO m => Scheme -> m Type
+instantiate (Forall fvs t) = do
+  as <- mapM (const newTyMeta) fvs
+  forM_ (zip fvs as) $ \(f, a) ->
+    liftIO $ writeIORef f (Just a)
+  t' <- derefType t
+  forM_ fvs $ \f ->
+    liftIO $ writeIORef f Nothing
+  return t'
+
+freevars :: MonadIO m => Env -> Type -> m [IORef (Maybe Type)]
+freevars env t = do
+  env' <- deref env
+  t' <- derefType t
+  return $ fv t' \\ nub (foldr (union . fv') [] (Map.elems env'))
+
+fv :: Type -> [IORef (Maybe Type)]
+fv (TyMeta r) = [r]
+fv (TyApp _ ts) = nub (foldr (union . fv) [] ts)
+
+fv' :: Scheme -> [IORef (Maybe Type)]
+fv' (Forall as t) = fv t \\ as

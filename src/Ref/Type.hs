@@ -13,5 +13,8 @@ instance Show Type where
 data TyCon = ArrowC | IntCon | BoolCon
   deriving (Eq, Show)
 
-data Scheme = Scheme [String] Type
-  deriving (Eq, Show)
+data Scheme = Forall [IORef (Maybe Type)] Type
+  deriving (Eq)
+
+instance Show Scheme where
+  show (Forall as t) = "Forall " <> show (length as) <> " " <> show t
