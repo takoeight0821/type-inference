@@ -1,7 +1,7 @@
 module Ref.Infer where
 
 import           Control.Monad.IO.Class
-import           Control.Monad.State
+import           Control.Monad.Reader
 import           Data.IORef
 import           Data.List
 import           Data.Map               (Map)
@@ -11,16 +11,16 @@ import           Syntax
 
 type Env = Map String Scheme
 
-type InferM a = StateT Env IO a
+type InferM a = ReaderT Env IO a
 
-runInfer :: InferM Type -> IO (Type, Env)
+runInfer :: InferM Type -> IO Type
 runInfer m = do
-  (a, env) <- runStateT m mempty
-  (,) <$> derefType a <*> deref env
+  a <- runReaderT m mempty
+  derefType a
 
 infer :: Exp -> InferM Type
 infer (Var x)       = do
-  mt <- gets (Map.lookup x)
+  mt <- asks (Map.lookup x)
   case mt of
     Nothing -> error "undefined variable"
     Just t  -> instantiate t
@@ -34,21 +34,13 @@ infer (App e1 e2)   = do
   return retTy
 infer (Lam x e)     = do
   xTy <- newTyMeta
-
-  env <- get
-  modify (Map.insert x (Forall [] xTy))
-  eTy <- infer e
-  put env
-
+  eTy <- local (Map.insert x (Forall [] xTy)) $ infer e
   return (TyApp ArrowC [xTy, eTy])
 infer (Let x e1 e2) = do
-  env <- get
   t1 <- infer e1
-  put env
-
+  env <- ask
   scheme <- generalize env t1
-  modify (Map.insert x scheme)
-  infer e2
+  local (Map.insert x scheme) $ infer e2
 
 newTyMeta :: MonadIO m => m Type
 newTyMeta = TyMeta <$> liftIO (newIORef Nothing)

@@ -11,6 +11,5 @@ main = do
     Left  bundle -> putStr $ errorBundlePretty bundle
     Right ast    -> do
       print ast
-      (t, env) <- runInfer $ infer ast
+      t <- runInfer $ infer ast
       print t
-      print env
