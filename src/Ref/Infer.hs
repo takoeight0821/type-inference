@@ -24,8 +24,8 @@ infer (Var x)       = do
   case mt of
     Nothing -> error "undefined variable"
     Just t  -> instantiate t
-infer (Const IntC{}) = return (TyApp IntCon [])
-infer (Const BoolC{}) = return (TyApp BoolCon [])
+infer (Const Int{}) = return (TyApp IntC [])
+infer (Const Bool{}) = return (TyApp BoolC [])
 infer (App e1 e2)   = do
   t1 <- infer e1
   t2 <- infer e2

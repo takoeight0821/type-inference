@@ -44,10 +44,10 @@ integer :: Parser Integer
 integer = lexeme L.decimal
 
 pIntC :: Parser Exp
-pIntC = Const . IntC <$> integer
+pIntC = Const . Int <$> integer
 
 pBoolC :: Parser Exp
-pBoolC = Const . BoolC <$> ((keyword "true" >> pure True) <|> (keyword "false" >> pure False))
+pBoolC = Const . Bool <$> ((keyword "true" >> pure True) <|> (keyword "false" >> pure False))
 
 pSingleExp :: Parser Exp
 pSingleExp = pVar <|> pIntC <|> pBoolC <|> between (symbol "(") (symbol ")") pExp

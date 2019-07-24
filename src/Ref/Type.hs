@@ -10,7 +10,7 @@ instance Show Type where
   show (TyMeta _) = "<meta>"
   show (TyApp c ts) = show c <> " " <> show ts
 
-data TyCon = ArrowC | IntCon | BoolCon
+data TyCon = ArrowC | IntC | BoolC
   deriving (Eq, Show)
 
 data Scheme = Forall [IORef (Maybe Type)] Type

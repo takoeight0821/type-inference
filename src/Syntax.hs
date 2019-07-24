@@ -7,6 +7,6 @@ data Exp = Var String
          | Let String Exp Exp
   deriving (Show, Eq)
 
-data Const = IntC Integer
-           | BoolC Bool
+data Const = Int Integer
+           | Bool Bool
   deriving (Show, Eq)
