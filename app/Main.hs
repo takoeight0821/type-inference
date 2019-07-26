@@ -12,9 +12,9 @@ main = do
     Left  bundle -> putStr $ errorBundlePretty bundle
     Right ast    -> do
       print ast
-      putStrLn "Ref:"
+      putStr "Ref: "
       t1 <- Ref.runInfer $ Ref.infer ast
       print t1
-      putStrLn "Subst:"
+      putStr "Subst: "
       let (_, t2) = Subst.runInfer $ Subst.infer ast
       print t2
