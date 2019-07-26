@@ -30,7 +30,8 @@ keyword x = void $ lexeme (string x <* notFollowedBy alphaNumChar)
 
 operator :: String -> Parser ()
 operator op = void $ lexeme (string op <* notFollowedBy opLetter)
-  where opLetter = oneOf "+-*/%=><:;|&"
+  where
+    opLetter = oneOf "+-*/%=><:;|&"
 
 lowerIdent :: Parser String
 lowerIdent = label "lower ident" $ lexeme $ do

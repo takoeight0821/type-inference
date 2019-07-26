@@ -8,7 +8,7 @@ data Type = TyMeta (IORef (Maybe Type))
 
 instance Show Type where
   show (TyMeta _) = "<meta>"
-  show (TyApp c ts) = show c <> " " <> show ts
+  show (TyApp c ts) = "TyApp " <> show c <> " " <> show ts
 
 data TyCon = ArrowC | IntC | BoolC
   deriving (Eq, Show)

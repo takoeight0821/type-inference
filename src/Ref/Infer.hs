@@ -20,8 +20,8 @@ runInfer m = do
 
 infer :: Exp -> InferM Type
 infer (Var x)       = do
-  mt <- asks (Map.lookup x)
-  case mt of
+  env <- ask
+  case Map.lookup x env of
     Nothing -> error "undefined variable"
     Just t  -> instantiate t
 infer (Const Int{}) = return (TyApp IntC [])

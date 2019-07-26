@@ -2,7 +2,8 @@ module Main where
 
 import           Parse
 import           Text.Megaparsec.Error
-import           Ref.Infer
+import qualified Ref.Infer as Ref
+import qualified Subst.Infer as Subst
 
 main :: IO ()
 main = do
@@ -11,5 +12,9 @@ main = do
     Left  bundle -> putStr $ errorBundlePretty bundle
     Right ast    -> do
       print ast
-      t <- runInfer $ infer ast
-      print t
+      putStrLn "Ref:"
+      t1 <- Ref.runInfer $ Ref.infer ast
+      print t1
+      putStrLn "Subst:"
+      let (_, t2) = Subst.runInfer $ Subst.infer ast
+      print t2

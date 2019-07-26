@@ -27,3 +27,7 @@ instance Substitutable Scheme where
 instance Substitutable a => Substitutable [a] where
   apply = map . apply
   ftv = foldr (Set.union . ftv) Set.empty
+
+instance Substitutable a => Substitutable (Map.Map k a) where
+  apply = Map.map . apply
+  ftv = ftv . Map.elems
