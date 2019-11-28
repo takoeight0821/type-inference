@@ -13,10 +13,10 @@ type Env = Map String Scheme
 
 type InferM a = ReaderT Env IO a
 
-runInfer :: InferM Type -> IO Type
+runInfer :: InferM Type -> IO Scheme
 runInfer m = do
   a <- runReaderT m mempty
-  derefType a
+  generalize mempty =<< derefType a
 
 infer :: Exp -> InferM Type
 infer (Var x)       = do

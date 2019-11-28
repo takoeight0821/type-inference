@@ -13,8 +13,10 @@ type Env = Map.Map String Scheme
 
 type InferM a = ReaderT Env (State Int) a
 
-runInfer :: InferM a -> a
-runInfer m = evalState (runReaderT m mempty) 0
+runInfer :: InferM (Subst, Type) -> Scheme
+runInfer m = flip evalState 0 $ (`runReaderT` mempty) $ do
+  (s, t) <- m
+  pure $ generalize mempty (apply s t)
 
 unify :: Type -> Type -> Subst
 unify (TyMeta a) t = bind a t
@@ -52,10 +54,8 @@ instantiate (Forall as t) = do
   let s = Map.fromList $ zip as as'
   return $ apply s t
 
-generalize :: Type -> InferM Scheme
-generalize t = do
-  env <- ask
-  return $ Forall (Set.toList $ ftv t `Set.difference` ftv env) t
+generalize :: Env -> Type -> Scheme
+generalize env t = Forall (Set.toList $ ftv t `Set.difference` ftv env) t
 
 lookupVar :: String -> InferM (Subst, Type)
 lookupVar x = do
@@ -84,6 +84,6 @@ infer (Lam x e) = do
   return (s, TyApp ArrowC [apply s xTy, eTy])
 infer (Let x e1 e2) = do
   (s1, t1) <- infer e1
-  scheme <- local (apply s1) $ generalize t1
+  scheme <- local (apply s1) $ asks generalize <*> pure t1
   (s2, t2) <- local (apply s1 . Map.insert x scheme) $ infer e2
   return (s2 `compose` s1, t2)

@@ -16,5 +16,5 @@ main = do
       t1 <- Ref.runInfer $ Ref.infer ast
       print t1
       putStr "Subst: "
-      let (_, t2) = Subst.runInfer $ Subst.infer ast
+      let t2 = Subst.runInfer $ Subst.infer ast
       print t2

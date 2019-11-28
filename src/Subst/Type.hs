@@ -13,7 +13,3 @@ data TyCon = ArrowC | IntC | BoolC
 
 data Scheme = Forall [TyVar] Type
   deriving (Eq, Show)
-
-tyvars :: Type -> Set.Set TyVar
-tyvars (TyMeta v) = Set.singleton v
-tyvars (TyApp _ ts) = Set.unions $ map tyvars ts
