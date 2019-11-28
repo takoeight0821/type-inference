@@ -4,6 +4,7 @@ import           Parse
 import           Text.Megaparsec.Error
 import qualified Ref.Infer as Ref
 import qualified Subst.Infer as Subst
+import qualified Constraint.Infer as Constraint
 
 main :: IO ()
 main = do
@@ -12,9 +13,12 @@ main = do
     Left  bundle -> putStr $ errorBundlePretty bundle
     Right ast    -> do
       print ast
-      putStr "Ref: "
+      putStrLn "Ref:"
       t1 <- Ref.runInfer $ Ref.infer ast
       print t1
-      putStr "Subst: "
+      putStrLn "Subst:"
       let t2 = Subst.runInfer $ Subst.infer ast
       print t2
+      putStrLn "Constraint:"
+      let t3 = Constraint.runInfer $ Constraint.infer ast
+      print t3

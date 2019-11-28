@@ -57,13 +57,6 @@ instantiate (Forall as t) = do
 generalize :: Env -> Type -> Scheme
 generalize env t = Forall (Set.toList $ ftv t `Set.difference` ftv env) t
 
-lookupVar :: String -> InferM (Subst, Type)
-lookupVar x = do
-  env <- ask
-  case Map.lookup x env of
-    Nothing -> error "error(lookupVar) : unbound variable"
-    Just s  -> (mempty, ) <$> instantiate s
-
 infer :: Exp -> InferM (Subst, Type)
 infer (Var x) = do
   env <- ask
