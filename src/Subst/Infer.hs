@@ -16,26 +16,26 @@ type InferM a = ReaderT Env (State Int) a
 runInfer :: InferM a -> a
 runInfer m = evalState (runReaderT m mempty) 0
 
-unify :: Type -> Type -> InferM Subst
+unify :: Type -> Type -> Subst
 unify (TyMeta a) t = bind a t
 unify t (TyMeta a) = bind a t
 unify (TyApp c1 ts1) (TyApp c2 ts2)
   | c1 == c2 = unify' ts1 ts2
 unify _ _ = error "error(unify)"
 
-unify' :: [Type] -> [Type] -> InferM Subst
-unify' [] [] = return mempty
-unify' (t1:ts1) (t2:ts2) = do
-  s1 <- unify t1 t2
-  s2 <- unify' (apply s1 ts1) (apply s1 ts2)
-  return (s2 `compose` s1)
+unify' :: [Type] -> [Type] -> Subst
+unify' [] [] = mempty
+unify' (t1:ts1) (t2:ts2) =
+  let s1 = unify t1 t2
+      s2 = unify' (apply s1 ts1) (apply s1 ts2)
+  in s2 `compose` s1
 unify' _ _ = error "error(unify')"
 
-bind :: TyVar -> Type -> InferM Subst
+bind :: TyVar -> Type -> Subst
 bind a t
-  | t == TyMeta a = return mempty
+  | t == TyMeta a = mempty
   | occursCheck a t = error "error(bind) : infinite type"
-  | otherwise = return $ Map.singleton a t
+  | otherwise = Map.singleton a t
 
 occursCheck :: Substitutable a => TyVar -> a -> Bool
 occursCheck a t = a `Set.member` ftv t
@@ -76,7 +76,7 @@ infer (App e1 e2) = do
   (s1, t1) <- infer e1
   (s2, t2) <- local (apply s1) $ infer e2
   retTy <- newTyMeta
-  s3 <- unify (apply s2 t1) (TyApp ArrowC [t2, retTy])
+  let s3 = unify (apply s2 t1) (TyApp ArrowC [t2, retTy])
   return (s3 `compose` s2 `compose` s1, apply s3 retTy)
 infer (Lam x e) = do
   xTy <- newTyMeta
