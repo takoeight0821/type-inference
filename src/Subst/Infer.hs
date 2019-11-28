@@ -20,16 +20,16 @@ unify :: Type -> Type -> Subst
 unify (TyMeta a) t = bind a t
 unify t (TyMeta a) = bind a t
 unify (TyApp c1 ts1) (TyApp c2 ts2)
-  | c1 == c2 = unify' ts1 ts2
+  | c1 == c2 = unifyMany ts1 ts2
 unify _ _ = error "error(unify)"
 
-unify' :: [Type] -> [Type] -> Subst
-unify' [] [] = mempty
-unify' (t1:ts1) (t2:ts2) =
+unifyMany :: [Type] -> [Type] -> Subst
+unifyMany [] [] = mempty
+unifyMany (t1:ts1) (t2:ts2) =
   let s1 = unify t1 t2
-      s2 = unify' (apply s1 ts1) (apply s1 ts2)
+      s2 = unifyMany (apply s1 ts1) (apply s1 ts2)
   in s2 `compose` s1
-unify' _ _ = error "error(unify')"
+unifyMany _ _ = error "error(unifyMany)"
 
 bind :: TyVar -> Type -> Subst
 bind a t
