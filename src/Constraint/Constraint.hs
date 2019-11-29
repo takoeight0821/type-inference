@@ -6,6 +6,7 @@ import qualified Data.Map         as Map
 import qualified Data.Set         as Set
 
 data Constraint = Type :~ Type
+  deriving (Eq, Show)
 
 instance Substitutable Constraint where
   apply s (t1 :~ t2) = apply s t1 :~ apply s t2
@@ -39,7 +40,7 @@ unifyMany _ _ = error "error(unifyMany)"
 bind :: TyVar -> Type -> Subst
 bind a t
   | t == TyMeta a = mempty
-  | occursCheck a t = error "error(bind) : infinite type"
+  | occursCheck a t = error $ "error(bind) : infinite type " <> show a <> " " <> show t 
   | otherwise = Map.singleton a t
 
 occursCheck :: Substitutable a => TyVar -> a -> Bool

@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 module Constraint.Infer where
 
 import           Constraint.Constraint
@@ -25,11 +26,11 @@ newTyMeta = do
   modify (+1)
   return $ TyMeta s
 
-instantiate :: Scheme -> InferM ([Constraint], Type)
+instantiate :: Scheme -> InferM Type
 instantiate (Forall as t) = do
   as' <- mapM (const newTyMeta) as
-  let cs = zipWith (\a a' -> TyMeta a :~ a') as as'
-  return (cs, t)
+  let su = Map.fromList (zip as as')
+  return (apply su t)
 
 generalize :: Env -> Type -> Scheme
 generalize env t = Forall (Set.toList $ ftv t `Set.difference` ftv env) t
@@ -39,7 +40,7 @@ infer (Var x) = do
   env <- ask
   case Map.lookup x env of
     Nothing -> error "error(lookupVar) : unbound variable"
-    Just s -> instantiate s
+    Just s  -> ([], ) <$> instantiate s
 infer (Const Int{}) = return ([], TyApp IntC [])
 infer (Const Bool{}) = return ([], TyApp BoolC [])
 infer (App e1 e2) = do
@@ -55,6 +56,6 @@ infer (Let x e1 e2) = do
   (cs1, t1) <- infer e1
   let sub = runSolve cs1
   env <- ask
-  let scheme = generalize (apply sub env) t1
+  let scheme = generalize (apply sub env) (apply sub t1)
   (cs2, t2) <- local (apply sub . Map.insert x scheme) $ infer e2
   return (cs1 <> cs2, t2)
