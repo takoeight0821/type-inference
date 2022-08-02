@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.31.2.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: cccd1b3a4a25086ad12b5a097ecff0d4b0576a80f02ee46c86a2771bd812daf6
+-- hash: c1ce587abc15a6ec230cf9adc130a0d6ccd8cf01e57e9edbf5f4b912b51faf1a
 
 name:           type-inference
 version:        0.1.0.0
@@ -78,6 +78,7 @@ test-suite type-inference-test
   build-depends:
       base >=4.7 && <5
     , containers
+    , hspec
     , megaparsec
     , mtl
     , transformers
