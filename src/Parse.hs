@@ -23,7 +23,7 @@ symbol :: String -> Parser String
 symbol = L.symbol sc
 
 reserved :: Parser ()
-reserved = void $ choice $ map (try . keyword) ["let", "in", "fun", "true", "false"]
+reserved = void $ choice $ map (try . keyword) ["let", "in", "true", "false"]
 
 keyword :: String -> Parser ()
 keyword x = void $ lexeme (string x <* notFollowedBy alphaNumChar)
@@ -52,17 +52,17 @@ pBoolC :: Parser Exp
 pBoolC = Const . Bool <$> ((keyword "true" >> pure True) <|> (keyword "false" >> pure False))
 
 pSingleExp :: Parser Exp
-pSingleExp = pVar <|> pIntC <|> pBoolC <|> between (symbol "(") (symbol ")") pExp
-
-pApp :: Parser Exp
-pApp = foldl App <$> pSingleExp <*> some pSingleExp
+pSingleExp = pVar <|> pIntC <|> pBoolC <|> between (symbol "(") (symbol ")") pExp <|> pLam
 
 pLam :: Parser Exp
 pLam = label "lambda" $ do
-  void $ lexeme $ string "fun" <* notFollowedBy alphaNumChar
-  x <- lowerIdent
-  operator "->"
-  Lam x <$> pExp
+  between (symbol "{") (symbol "}") $ do
+    var <- lowerIdent
+    _ <- symbol "->"
+    Lam var <$> pExp
+
+pApp :: Parser Exp
+pApp = foldl App <$> pSingleExp <*> some pSingleExp
 
 pLet :: Parser Exp
 pLet = label "let" $ do
