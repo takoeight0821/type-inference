@@ -2,8 +2,9 @@ module Ref.Type where
 
 import Data.IORef
 
-data Type = TyMeta (IORef (Maybe Type))
-          | TyApp TyCon [Type]
+data Type
+  = TyMeta (IORef (Maybe Type))
+  | TyApp TyCon [Type]
   deriving (Eq)
 
 instance Show Type where

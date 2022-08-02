@@ -1,29 +1,51 @@
 {-# LANGUAGE TupleSections #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+
+{-# HLINT ignore "Use section" #-}
+
 module Constraint.Infer where
 
-import           Constraint.Constraint
-import           Constraint.Subst
-import           Constraint.Type
-import           Control.Monad.Reader
-import           Control.Monad.State
-import qualified Data.Map              as Map
-import qualified Data.Set              as Set
-import           Syntax
+import Constraint.Constraint (Constraint (..), runSolve)
+import Constraint.Type
+  ( Scheme (..),
+    TyCon (ArrowC, BoolC, IntC),
+    Type (..),
+  )
+import Control.Monad.Except (Except, MonadError (throwError), runExcept)
+import Control.Monad.Reader
+  ( MonadReader (ask, local),
+    ReaderT (runReaderT),
+  )
+import Control.Monad.State
+  ( MonadState (get),
+    StateT,
+    evalStateT,
+    modify,
+  )
+import qualified Data.Map as Map
+import qualified Data.Set as Set
+import Subst.Subst (Substitutable (apply, ftv))
+import Syntax (Const (Bool, Int), Exp (..))
 
 type Env = Map.Map String Scheme
 
-type InferM a = ReaderT Env (State Int) a
+type Error = String
 
-runInfer :: InferM ([Constraint], Type) -> Scheme
-runInfer m = flip evalState (0 :: Int) $ (`runReaderT` (mempty :: Env)) $ do
-  (cs, t) <- m
-  let s = runSolve cs
-  pure $ generalize mempty (apply s t)
+type InferM a = ReaderT Env (StateT Int (Except Error)) a
+
+runInfer :: InferM ([Constraint], Type) -> Either Error Scheme
+runInfer m =
+  runExcept $
+    flip evalStateT (0 :: Int) $
+      flip runReaderT (mempty :: Env) $ do
+        (cs, t) <- m
+        s <- runSolve cs
+        pure $ generalize mempty (apply s t)
 
 newTyMeta :: InferM Type
 newTyMeta = do
   s <- get
-  modify (+1)
+  modify (+ 1)
   return $ TyMeta s
 
 instantiate :: Scheme -> InferM Type
@@ -39,10 +61,10 @@ infer :: Exp -> InferM ([Constraint], Type)
 infer (Var x) = do
   env <- ask
   case Map.lookup x env of
-    Nothing -> error "error(lookupVar) : unbound variable"
-    Just s  -> ([], ) <$> instantiate s
-infer (Const Int{}) = return ([], TyApp IntC [])
-infer (Const Bool{}) = return ([], TyApp BoolC [])
+    Nothing -> throwError "error(lookupVar) : unbound variable"
+    Just s -> ([],) <$> instantiate s
+infer (Const Int {}) = return ([], TyApp IntC [])
+infer (Const Bool {}) = return ([], TyApp BoolC [])
 infer (App e1 e2) = do
   (cs1, t1) <- infer e1
   (cs2, t2) <- infer e2
@@ -54,7 +76,7 @@ infer (Lam x e) = do
   return (cs, TyApp ArrowC [xTy, eTy])
 infer (Let x e1 e2) = do
   (cs1, t1) <- infer e1
-  let sub = runSolve cs1
+  sub <- runSolve cs1
   env <- ask
   let scheme = generalize (apply sub env) (apply sub t1)
   (cs2, t2) <- local (apply sub . Map.insert x scheme) $ infer e2

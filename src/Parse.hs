@@ -1,11 +1,11 @@
 module Parse where
 
-import           Text.Megaparsec
-import           Syntax
-import           Data.Void                      ( Void )
-import qualified Text.Megaparsec.Char.Lexer    as L
-import           Text.Megaparsec.Char
-import           Control.Monad
+import Control.Monad
+import Data.Void (Void)
+import Syntax
+import Text.Megaparsec
+import Text.Megaparsec.Char
+import qualified Text.Megaparsec.Char.Lexer as L
 
 parseExp :: String -> String -> Either (ParseErrorBundle String Void) Exp
 parseExp = parse (pExp <* eof)
@@ -34,9 +34,10 @@ operator op = void $ lexeme (string op <* notFollowedBy opLetter)
     opLetter = oneOf "+-*/%=><:;|&"
 
 lowerIdent :: Parser String
-lowerIdent = label "lower ident" $ lexeme $ do
-  notFollowedBy reserved
-  (:) <$> lowerChar <*> many alphaNumChar
+lowerIdent = label "lower ident" $
+  lexeme $ do
+    notFollowedBy reserved
+    (:) <$> lowerChar <*> many alphaNumChar
 
 pVar :: Parser Exp
 pVar = Var <$> lowerIdent <?> "variable"
